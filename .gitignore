@@ -1,0 +1,7 @@
+.venv/
+.env
+milvus_data/
+__pycache__/
+*.pyc
+.helm-secrets.yaml
+*.egg-info/

@@ -1,0 +1,32 @@
+version: '2'
+image_name: ollama
+apis:
+  - inference
+  - vector_io
+providers:
+  vector_io:
+    - provider_id: milvus
+      provider_type: inline::milvus
+      config:
+        db_path: milvus_data/milvus_lite.db
+        persistence:
+          namespace: vector_io::milvus
+          backend: kv_default
+  inference:
+    - provider_id: ollama
+      provider_type: remote::ollama
+      config:
+        url: http://localhost:11434/v1
+persistence:
+  host: localhost
+  port: 5432
+  db_name: agent_memory
+  user: postgres
+  password: your_password_here
+  # Use 'postgres' or 'remote::postgres' depending on your local stack build
+  type: postgres
+# Ollamas auto discovery should register the models registered there automatically
+metadata:
+  tags: [ ]
+server:
+  port: 8321
