@@ -184,6 +184,30 @@
             background: #ccc;
             cursor: not-allowed;
         }
+    /* Suggestion chips */
+        #suggestions {
+            padding: 10px 24px 0;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+        }   
+        #suggestions.hidden { display: none; }
+        .suggestion-chip {
+            padding: 7px 14px;
+            background: #f0f0f8;
+            border: 1px solid #c8c8e8;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #1a1a2e;
+            transition: background 0.15s;
+            max-width: 260px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }   
+        .suggestion-chip:hover { background: #dcdcf4; border-color: #1a1a2e; }
     </style>
 </head>
 <body>
@@ -199,6 +223,14 @@
     </div>
 </div>
 
+<div id="suggestions">
+      <div class="suggestion-chip" title="Fetch the vLLM README and summarize it" onclick="useSuggestion(0)">Summarize the vLLM README</div>
+      <div class="suggestion-chip" title="GPU-hours calculation for fine-tuning" onclick="useSuggestion(1)">GPU-hours to fine-tune a 7B model</div>
+      <div class="suggestion-chip" title="Fetch the SPIFFE README and explain it" onclick="useSuggestion(2)">What problem does SPIFFE solve?</div>
+      <div class="suggestion-chip" title="Simple math with calculator tool" onclick="useSuggestion(3)">What is 2^32 in gigabytes?</div>
+  </div>
+
+
 <div class="input-area">
     <textarea id="input" placeholder="Type your message..." rows="1"
               onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
@@ -212,6 +244,21 @@
     const statusDot = document.getElementById('statusDot');
 
     const conversationHistory = [];
+
+    const SUGGESTIONS = [
+          "Fetch https://raw.githubusercontent.com/vllm-project/vllm/main/README.md. Once you have the content, summarize what vLLM is in 3 sentences based on whatever text you received, even if truncated.",
+          "How many GPU-hours to fine-tune a 7B model at 40 TFLOPS on 10B tokens? Assume 6 FLOPs per token per parameter.",
+          "Fetch https://raw.githubusercontent.com/spiffe/spiffe/main/README.md. Once you have the content, explain in 2 sentences what problem SPIFFE solves based on whatever text you received, even if truncated.",
+          "What is 2 ** 32 and what would that be in gigabytes?",
+      ];  
+      
+      function useSuggestion(i) {
+          input.value = SUGGESTIONS[i];
+          input.style.height = 'auto';
+          input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+          sendMessage();
+      }   
+
 
     // Check agent health on load
     async function checkHealth() {

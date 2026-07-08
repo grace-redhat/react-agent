@@ -1,10 +1,12 @@
+import httpx
+
 from os import getenv
 from typing import Any
 
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
-from react_agent.tools import dummy_web_search, calculator
+from react_agent.tools import calculator
 
 
 def get_graph_closure(
@@ -15,7 +17,7 @@ def get_graph_closure(
 ) -> Any:
     """Build and return a LangGraph ReAct agent with the configured LLM and tools.
 
-    Creates a ChatOpenAI client, wires dummy_web_search tool,
+    Creates a ChatOpenAI client, wires mcp tools,
     and uses create_agent to produce a graph that runs the ReAct loop (reason,
     act with tools, observe, repeat until a final answer).
 
@@ -44,14 +46,16 @@ def get_graph_closure(
     if not is_local and not api_key:
         raise ValueError("API_KEY is required for non-local environments.")
 
-    tools = [dummy_web_search, calculator] + (mcp_tools or [])
+    tools = [calculator] + (mcp_tools or [])
 
     chat = ChatOpenAI(
         model=model_id,
         temperature=0.01,
         api_key=api_key,
         base_url=base_url,
-        streaming=False
+        streaming=False,
+        http_client=httpx.Client(verify=False),
+        http_async_client=httpx.AsyncClient(verify=False),
     )
 
     system_prompt = """You are a helpful assistant. When you receive a result from a tool,

@@ -121,12 +121,13 @@ class HealthResponse(BaseModel):
 
 # Global variable for agent graph
 agent_graph = None
+mcp_client = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize the ReAct agent graph on startup and clear it on shutdown."""
-    global agent_graph
+    global agent_graph, mcp_client
 
     enable_tracing()
 
@@ -136,13 +137,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if base_url and not base_url.endswith("/v1"):
         base_url = base_url.rstrip("/") + "/v1"
 
-    mcp_client = MultiServerMCPClient(MCP_SERVER_CONFIG)
-    mcp_tools = await mcp_client.get_tools()
+    try:
+        mcp_client = MultiServerMCPClient(MCP_SERVER_CONFIG)
+        mcp_tools = await mcp_client.get_tools()
+        logger.info(f"MCP tools loaded: {[tool.name for tool in mcp_tools]}")
+    except Exception as e:
+        logger.warning(f"MCP tools unvailable, starting without them: {e}")
+        mcp_tools = []
+
     agent_graph = get_graph_closure(model_id=model_id, base_url=base_url, mcp_tools=mcp_tools)
-    
+        
     yield
 
     agent_graph = None
+    mcp_client = None
 
 
 # Create FastAPI app
@@ -350,6 +358,21 @@ async def _handle_stream(
                 # Tool calls (after LLM finishes generating the call)
                 elif kind == "on_chat_model_end":
                     message = event["data"]["output"]
+                    if hasattr(message, "content") and message.content:
+                        data = {
+                            "id": completion_id,
+                            "object": "chat.completion.chunk",
+                            "created": created,
+                            "model": model_id,
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "delta": {"content": message.content},
+                                    "finish_reason": None,
+                                }
+                            ],
+                        }
+                        yield f"data: {json.dumps(data)}\n\n"
                     if hasattr(message, "tool_calls") and message.tool_calls:
                         tool_calls_delta = [
                             {

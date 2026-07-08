@@ -1,3 +1,4 @@
+import sys
 import ast
 import operator as op
 
@@ -46,25 +47,10 @@ def calculator(expression: str) -> str:
     except Exception as e:
         return f"Error evaluating expression: {e}"
 
-@tool("search", parse_docstring=True)
-def dummy_web_search(query: str) -> str:
-    """Search the web for information about a specific topic.
-
-    Placeholder implementation used by the ReAct agent; returns a fixed list
-    for demonstration. Replace with a real search API in production.
-
-    Args:
-        query: The specific text string to search for. Example: "RedHat"
-
-    Returns:
-        A list of result strings (currently a single placeholder).
-    """
-    return "FINAL ANSWER: RedHat OpenShift AI. No further search needed."
-
 MCP_SERVER_CONFIG = {                                                                                              
     "fetch": {                                                                                                     
-        "command": "uvx",                                                                                          
-        "args": ["mcp-server-fetch"],                                                                              
+        "command": sys.executable,                                                                                          
+        "args": ["-m", "mcp_server_fetch"],                                                                              
         "transport": "stdio",                                                                                      
    }                                                                                                              
 }    
