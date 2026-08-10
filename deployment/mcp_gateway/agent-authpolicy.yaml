@@ -1,0 +1,33 @@
+apiVersion: kuadrant.io/v1beta2
+kind: AuthPolicy
+metadata:
+  name: agent-tool-authz
+  namespace: gateway-system
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: mcp-demo-gateway
+  rules:
+    authentication:
+      "agent-api-key":
+        apiKey:
+          allNamespaces: true
+          selector:
+            matchLabels:
+              authorino.kuadrant.io/managed-by: authorino
+        credentials:
+          authorizationHeader:
+            prefix: APIKEY
+    authorization:
+        "tool-level-access":
+          patternMatching:
+            patterns:
+              - any:
+                - selector: context.request.http.headers.x-mcp-toolname
+                  operator: neq
+                  value: github_issue_write
+                - selector: auth.identity.metadata.labels.access-level
+                  operator: neq
+                  value: readonly
+                  

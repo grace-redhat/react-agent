@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
 from typing import Any
+import re
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import (
@@ -23,6 +24,7 @@ from react_agent.tracing import enable_tracing
 from react_agent.tools import MCP_SERVER_CONFIG
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 # OpenAI-compatible request/response models
@@ -143,6 +145,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info(f"MCP tools loaded: {[tool.name for tool in mcp_tools]}")
     except Exception as e:
         logger.warning(f"MCP tools unvailable, starting without them: {e}")
+        if hasattr(e, "exceptions"):
+          for sub in e.exceptions:
+              logger.exception("MCP sub-exception:", exc_info=sub)
         mcp_tools = []
 
     agent_graph = get_graph_closure(model_id=model_id, base_url=base_url, mcp_tools=mcp_tools)
@@ -164,10 +169,16 @@ app = FastAPI(
     ],
 )
 
+def _strip_thinking(content: str) -> str:
+    marker = "</think>"
+    idx = content.rfind(marker)
+    if idx == -1:
+        return content.strip()
+    return content[idx + len(marker):].strip()
+
 
 def _auth_enabled() -> bool:
     return getenv("AUTH_ENABLED", "false").strip().lower() == "true"
-
 
 def _configure_auth_middleware() -> None:
     if not _auth_enabled():
@@ -290,7 +301,7 @@ async def _handle_chat(messages: list[HumanMessage], model_id: str) -> dict[str,
             # Final assistant content is the last AIMessage with content
             for message in reversed(result["messages"]):
                 if isinstance(message, AIMessage) and message.content:
-                    assistant_content = message.content
+                    assistant_content = _strip_thinking(message.content)
                     break
 
         return {
@@ -359,6 +370,7 @@ async def _handle_stream(
                 elif kind == "on_chat_model_end":
                     message = event["data"]["output"]
                     if hasattr(message, "content") and message.content:
+                        message_content = _strip_thinking(message.content)
                         data = {
                             "id": completion_id,
                             "object": "chat.completion.chunk",
@@ -367,7 +379,7 @@ async def _handle_stream(
                             "choices": [
                                 {
                                     "index": 0,
-                                    "delta": {"content": message.content},
+                                    "delta": {"content": message_content},
                                     "finish_reason": None,
                                 }
                             ],
@@ -405,7 +417,7 @@ async def _handle_stream(
                         yield f"data: {json.dumps(data)}\n\n"
 
                 # Tool execution results
-                elif kind == "on_tool_end":
+                elif kind == "on_tool_end" and False:
                     output = event["data"].get("output", "")
                     if hasattr(output, "content"):
                         output = output.content
@@ -479,10 +491,7 @@ async def health():
 # ── Playground UI ────────────────────────────────────────────────────────────
 _BASE_DIR = Path(__file__).resolve().parent
 _PLAYGROUND_HTML = _BASE_DIR / "playground" / "templates" / "index.html"
-# In Docker the images are copied to /opt/app-root/src/images; locally they live at the repo root
 _IMAGES_DIR = _BASE_DIR / "images"
-if not _IMAGES_DIR.is_dir():
-    _IMAGES_DIR = _BASE_DIR.parent.parent.parent / "images"
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

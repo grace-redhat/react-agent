@@ -33,7 +33,6 @@ LangGraph and LangChain.
 `make init` creates a `.env` file from `.env.example`. Set your environment variables in the `.env` file.
 
 ```bash
-cd agents/langgraph/templates/react_agent
 make init
 ```
 
@@ -47,7 +46,7 @@ make env
 
 ### Tracing (optional)
 
-Tracing is optional. If MLflow tracing is required, enable it by uncommenting and setting the following environment variables in the `.env` file. For how tracing works under the hood (span structure, autolog behavior, verification steps), see [tracing.md](../../../../tracing.md).
+Tracing is optional. If MLflow tracing is required, enable it by uncommenting and setting the following environment variables in the `.env` file.
 
 #### Tracing with a local MLflow server
 
@@ -70,7 +69,7 @@ When `MLFLOW_TRACKING_URI` is set, `make run-app` and `make run-cli` will automa
 
 #### Tracing with MLflow on OpenShift (RHOAI)
 
-See `.env.example` for the supported configurations (local dev with manual token, in-pod with K8s service account auth). For TLS, authentication, and RBAC setup, see [MLflow on OpenShift: Authentication and TLS](../../../../docs/mlflow-openshift-auth-and-tls.md).
+See `.env.example` for the supported configurations (local dev with manual token, in-pod with K8s service account auth).
 
 **Notes:**
 
@@ -95,8 +94,6 @@ Then update MODEL_ID in your .env to match, with the ollama/ prefix:
 Note: OGX auto-discovers any model you pull with Ollama — do not add the model to registered_resources in run_ogx_server.yaml. Adding it there will cause a conflict on startup because Ollama has already registered it. Verify the exact model name with ollama list and use that name (with ollama/ prefix) as your MODEL_ID.
 
 ---
-
-### Revised MODEL_ID note in "Configuration" section (line 149)
 
 > **Local OGX:** requires `ollama/` prefix. The name after the prefix must exactly match what `ollama list` shows (e.g., if `ollama list` shows `qwen3:1.7b`, set `MODEL_ID=ollama/qwen3:1.7b`). Do not register the model manually in `run_ogx_server.yaml` — OGX discovers it automatically.
 
@@ -236,8 +233,6 @@ oc get route langgraph-react-agent -o jsonpath='{.spec.host}'
 make undeploy
 ```
 
-See [OpenShift Deployment](../../../docs/openshift-deployment.md) for more details.
-
 ## Tests
 
 ```bash
@@ -278,6 +273,56 @@ curl -sN -X POST http://localhost:8000/chat/completions \
 ```bash
 curl http://localhost:8000/health
 ```
+
+## MCP Gateway (Optional): Tool-Level Authorization for MCP Tools
+
+The manifests under `deployment/mcp_gateway/` (plus a couple in `deployment/`) set up a gateway in front of the agent's MCP tool servers that authorizes each *tool call* individually — not just each request. The demo distinguishes a "readonly" API key, which can call `github_issue_read` but is denied on `github_issue_write`, from a "readwrite" key
+that can call both. This is independent of the base agent deployment above — the agent runs fine without it
+
+### How it fits together
+
+| Layer | Provides | Installed by |
+|---|---|---|
+| Kuadrant | Policy engine (Authorino evaluates `AuthPolicy`: resolves the caller's identity from an API key, checks
+it against a rule) | `kuadrant-operator.yaml` (operator, brings in Authorino + a DNS operator as OLM dependencies),
+`kuadrant-cr.yaml` (activates it) || Istio (Sail operator) | The Istio control plane, and the `istio` `GatewayClass` it registers once running |`istio-operator.yaml` (Sail operator subscription), `istio-selfmanaged.yaml` (`Istio` CR) || Gateway | The actual Envoy proxy traffic flows through — nothing serves traffic until this is applied |`gateway.yaml` (`Gateway` resource, class `istio`) — the object `AuthPolicy` and the `HTTPRoute` both attach to || [MCP Gateway](https://github.com/Kuadrant/mcp-gateway) | Decodes MCP/JSON-RPC traffic into named, policy-addressable tools (e.g. `github_issue_write`) instead of opaque HTTP bytes | `mcp-gateway-values.yaml` (Helm values for the `mcp-gateway` chart), granted the `Gateway` above via `mcpGatewayExtension` || Backend MCP server | The actual GitHub MCP server the gateway proxies to | `github-mcp-server.yaml` (Deployment/Service), registered via `github-mcp-registration.yaml` (`HTTPRoute` + `MCPServerRegistration`) |
+
+### Deployment order
+
+```bash
+# 1. Kuadrant: policy engine + its OLM dependencies (Authorino, DNS operator)
+oc apply -f deployment/mcp_gateway/kuadrant-operator.yaml
+# wait for the operator to report Ready, then:
+oc apply -f deployment/mcp_gateway/kuadrant-cr.yaml
+
+# 2. Istio (Sail operator): control plane, then the actual Gateway
+oc create namespace gateway-system
+oc apply -f deployment/mcp_gateway/istio-operator.yaml
+# wait for the sailoperator subscription to report Ready, then:
+oc apply -f deployment/mcp_gateway/istio-selfmanaged.yaml
+# wait for the Istio CR to report Ready, then:
+oc apply -f deployment/mcp_gateway/gateway.yaml
+
+# 3. MCP Gateway: CRDs, then the chart itself, pointed at the Gateway from step 2
+export MCP_GATEWAY_VERSION=0.7.1
+kubectl apply -k "https://github.com/kuadrant/mcp-gateway/config/crd?ref=v${MCP_GATEWAY_VERSION}"
+helm upgrade -i mcp-gateway oci://ghcr.io/kuadrant/charts/mcp-gateway \
+  --version ${MCP_GATEWAY_VERSION} \
+  -f deployment/mcp_gateway/mcp-gateway-values.yaml \
+  -n mcp-system --create-namespace
+oc apply -f deployment/mcp_gateway/reference-grant.yaml
+
+# 4. Register the GitHub MCP server behind it
+oc create secret generic github-mcp-token --from-literal=GITHUB_TOKEN=<your-github-token> -n mcp-system
+oc apply -f deployment/github-mcp-server.yaml
+oc apply -f deployment/github-mcp-registration.yaml
+
+# 5. Apply the tool-level authorization policy and demo identities
+oc apply -f deployment/mcp_gateway/agent-authpolicy.yaml
+# fill in deployment/mcp_gateway/agent-identities.yaml with real API keys first
+oc apply -f deployment/mcp_gateway/agent-identities.yaml
+
+# Before running the sequence above:** confirm `MCP_GATEWAY_VERSION` against a real [released tag](https://github.com/Kuadrant/mcp-gateway/releases) — `0.7.1` is current as of writing but may drift. Also confirm `deployment/mcp_gateway/mcp-gateway-values.yaml`'s `gateway.publicHost` and `deployment/github-mcp-registration.yaml`'s `HTTPRoute.hostnames` use the *same* value (your cluster's apps domain).
 
 ## Resources
 

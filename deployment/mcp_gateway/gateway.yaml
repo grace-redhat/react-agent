@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gateway-system-cert
+  namespace: openshift-ingress
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    namespace: gateway-system
+  to:
+  - group: ""
+    kind: Secret
+    name: cert-manager-ingress-cert
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mcp-demo-gateway
+  namespace: gateway-system
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: mcp
+    port: 443
+    protocol: HTTPS
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: cert-manager-ingress-cert
+        namespace: openshift-ingress
+  - name: internal
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same

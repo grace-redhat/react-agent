@@ -6,13 +6,18 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from react_agent.tools import MCP_SERVER_CONFIG
 from react_agent.agent import get_graph_closure
 
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 QUESTIONS = (
-    "Fetch https://raw.githubusercontent.com/vllm-project/vllm/main/README.md and give me a 3-sentence summary of vLLM.",
+    "Fetch https://www.redhat.com/en/topics/ai/agentops and give me a 3-sentence summary of the AgentOps doc.",
     "How many GPU-hours to fine-tune a 7B model at 40 TFLOPS on 10B tokens? Assume 6 FLOPs per token per parameter.",
     "Fetch https://raw.githubusercontent.com/spiffe/spiffe/main/README.md and explain in 2 sentences what problem SPIFFE solves.",
     "What is 2 ** 32 and what would that be in gigabytes?",
+    "Get the most recent commit to the repo with owner: vllm-project and repo: vllm",
 )
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 class SimpleContext:
     """Simple context object for local execution that holds request payload and headers."""

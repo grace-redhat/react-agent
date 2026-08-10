@@ -1,0 +1,35 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: github-mcp-route
+  namespace: mcp-system
+spec:
+  parentRefs:
+  - name: mcp-demo-gateway
+    namespace: gateway-system
+    sectionName: mcp
+  hostnames:
+    - <your-cluster-apps-domain>
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /github
+    backendRefs:
+    - name: github-mcp-server
+      port: 9090
+---
+apiVersion: mcp.kuadrant.io/v1alpha1
+kind: MCPServerRegistration
+metadata:
+  name: github-mcp
+  namespace: mcp-system
+spec:
+  prefix: github_
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: github-mcp-route
+  credentialRef:
+    name: github-mcp-token
+    key: GITHUB_TOKEN

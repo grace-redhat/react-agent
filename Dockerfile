@@ -13,7 +13,6 @@ COPY --from=ghcr.io/astral-sh/uv@sha256:fc93e9ecd7218e9ec8fba117af89348eef8fd246
 COPY --from=ghcr.io/astral-sh/uv@sha256:fc93e9ecd7218e9ec8fba117af89348eef8fd2463c50c13347478769aaedd0ce /uvx /usr/local/bin/uvx
 
 # Copy project files for dependency installation.
-# Keep the repo-relative layout so ../../../../components/auth resolves.
 COPY pyproject.toml .
 COPY src/ ./src/
 COPY components/auth/ ./components/auth/

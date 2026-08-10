@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agent-readonly-key
+  namespace: mcp-system
+  labels:
+    authorino.kuadrant.io/managed-by: authorino
+    access-level: readonly
+stringData:
+  api_key: <readonly-key-here>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agent-readwrite-key
+  namespace: mcp-system
+  labels:
+    authorino.kuadrant.io/managed-by: authorino
+    access-level: readwrite
+stringData:
+  api_key: <readwrite-key-here>

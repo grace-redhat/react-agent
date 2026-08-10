@@ -1,6 +1,8 @@
 import sys
+import os
 import ast
 import operator as op
+import httpx
 
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
@@ -47,10 +49,41 @@ def calculator(expression: str) -> str:
     except Exception as e:
         return f"Error evaluating expression: {e}"
 
-MCP_SERVER_CONFIG = {                                                                                              
-    "fetch": {                                                                                                     
-        "command": sys.executable,                                                                                          
-        "args": ["-m", "mcp_server_fetch"],                                                                              
-        "transport": "stdio",                                                                                      
-   }                                                                                                              
-}    
+@tool("fetch_page", parse_docstring=True)
+def fetch_page(url: str) -> str:
+    """Fetch a web page and return its full content as clean markdown in a single call.
+
+    Args:
+        url: The full URL of the web page to fetch.
+
+    Returns:
+        The page content as markdown, or an error message if the fetch failed.
+    """
+    api_key = os.getenv("FIRECRAWL_API_KEY")
+    if not api_key:
+        return "Error: FIRECRAWL_API_KEY is not set."
+
+    try:
+        response = httpx.post(
+            "https://api.firecrawl.dev/v1/scrape",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"url": url, "formats": ["markdown"]},
+            timeout=30.0,
+        )
+        response.raise_for_status()
+        content = response.json()["data"]["markdown"]
+        max_chars = 12000
+        if len(content) > max_chars:
+            content = content[:max_chars] + "\n\n[Content truncated to fit model context window.]"
+        return content
+    except Exception as e:
+        return f"Error fetching {url}: {e}"
+
+MCP_SERVER_CONFIG = {
+    "github": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "transport": "stdio",
+        "env": {**os.environ, "GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_TOKEN", "")},
+   },
+}   

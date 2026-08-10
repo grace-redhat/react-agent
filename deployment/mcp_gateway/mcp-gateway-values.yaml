@@ -1,0 +1,9 @@
+controller:
+  enabled: true
+gateway:
+  publicHost: <your-cluster-apps-domain>
+mcpGatewayExtension:
+  create: true
+  gatewayRef:
+    name: mcp-demo-gateway
+    namespace: gateway-system

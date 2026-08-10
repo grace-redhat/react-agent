@@ -3,7 +3,7 @@ AGENT_NAME     := $(shell python3 -c "import re; print(re.search(r'^name:\s*(.+)
 CHART_DIR      := deployment
 VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
-MODEL          ?= llama3.1:8b
+MODEL          ?= qwen3:1.7b
 
 .PHONY: init re-init env ollama ogx-server run-app run-app-fresh run-cli build push build-openshift deploy undeploy test test-integration test-auth-integration dry-run help
 
@@ -133,7 +133,9 @@ deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	  umask 077 && \
 	  { printf 'secrets:\n  apiKey: "%s"\n' "$${API_KEY}"; \
 	    [ -z "$${MLFLOW_TRACKING_TOKEN}" ] || printf '  mlflowTrackingToken: "%s"\n' "$${MLFLOW_TRACKING_TOKEN}"; \
-	  } > .helm-secrets.yaml && \
+		[ -z "$${FIRECRAWL_API_KEY}" ] || printf 'extraSecrets:\n  FIRECRAWL_API_KEY: "%s"\n' "$${FIRECRAWL_API_KEY}"; \
+		[ -z "$${GITHUB_TOKEN}" ] || printf '  GITHUB_TOKEN: "%s"\n' "$${GITHUB_TOKEN}"; \
+		} > .helm-secrets.yaml && \
 	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \
 	    -f .helm-secrets.yaml \

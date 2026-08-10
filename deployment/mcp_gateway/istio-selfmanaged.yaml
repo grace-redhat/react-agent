@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-system
+---
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+  namespace: gateway-system
+spec:
+  version: v1.30.1
+  namespace: gateway-system
+  values:
+    meshConfig:
+      extensionProviders:
+      - name: kuadrant-authorization
+        envoyExtAuthzGrpc:
+          service: authorino-authorino-authorization.kuadrant-system.svc.cluster.local
+          port: 50051

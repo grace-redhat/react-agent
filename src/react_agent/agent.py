@@ -2,12 +2,16 @@ import httpx
 
 from os import getenv
 from typing import Any
+import logging
 
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
-from react_agent.tools import calculator
+from react_agent.tools import calculator, fetch_page
 
+logger = logging.getLogger(__name__)
+
+GITHUB_TOOLS_ALLOWLIST = {"get_issue", "create_issue"}
 
 def get_graph_closure(
     model_id: str | None = None,
@@ -46,7 +50,9 @@ def get_graph_closure(
     if not is_local and not api_key:
         raise ValueError("API_KEY is required for non-local environments.")
 
-    tools = [calculator] + (mcp_tools or [])
+    tools = [calculator, fetch_page] + [t for t in (mcp_tools or []) if t.name in GITHUB_TOOLS_ALLOWLIST]
+
+    logger.info(f"tools: {[tool.name for tool in tools]}")
 
     chat = ChatOpenAI(
         model=model_id,
@@ -62,5 +68,6 @@ def get_graph_closure(
         use that information to provide a FINAL answer to the user immediately.
         Do NOT call tools repeatedly for the same question."""
     agent = create_agent(model=chat, tools=tools, system_prompt=system_prompt)
+    
 
     return agent

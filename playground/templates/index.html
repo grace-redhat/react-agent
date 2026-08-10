@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LangGraph ReAct Agent — Playground</title>
+    <title>LangGraph ReAct Agent — Playground - READ WRITE AGENT</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -214,7 +214,7 @@
 
 <div class="header">
     <div class="status-dot" id="statusDot"></div>
-    LangGraph ReAct Agent — Playground
+    LangGraph ReAct Agent — Playground - READ WRITE
 </div>
 
 <div class="chat-container" id="chat">
@@ -224,11 +224,13 @@
 </div>
 
 <div id="suggestions">
-      <div class="suggestion-chip" title="Fetch the vLLM README and summarize it" onclick="useSuggestion(0)">Summarize the vLLM README</div>
-      <div class="suggestion-chip" title="GPU-hours calculation for fine-tuning" onclick="useSuggestion(1)">GPU-hours to fine-tune a 7B model</div>
-      <div class="suggestion-chip" title="Fetch the SPIFFE README and explain it" onclick="useSuggestion(2)">What problem does SPIFFE solve?</div>
-      <div class="suggestion-chip" title="Simple math with calculator tool" onclick="useSuggestion(3)">What is 2^32 in gigabytes?</div>
-  </div>
+    <div class="suggestion-chip" title="Fetch the vLLM README and summarize it" onclick="useSuggestion(0)">Summarize the vLLM README</div>
+    <div class="suggestion-chip" title="GPU-hours calculation for fine-tuning" onclick="useSuggestion(1)">GPU-hours to fine-tune a 7B model</div>
+    <div class="suggestion-chip" title="Fetch the SPIFFE README and explain it" onclick="useSuggestion(2)">What problem does SPIFFE solve?</div>
+    <div class="suggestion-chip" title="Simple math with calculator tool" onclick="useSuggestion(3)">What is 2^32 in gigabytes?</div>
+    <div class="suggestion-chip" title="What is the the first issue?" onclick="useSuggestion(4)">What is the first issue?</div>
+    <div class="suggestion-chip" title="Create an issue" onclick="useSuggestion(4)">Create an issue.</div>
+</div>
 
 
 <div class="input-area">
@@ -246,10 +248,12 @@
     const conversationHistory = [];
 
     const SUGGESTIONS = [
-          "Fetch https://raw.githubusercontent.com/vllm-project/vllm/main/README.md. Once you have the content, summarize what vLLM is in 3 sentences based on whatever text you received, even if truncated.",
+          "Fetch https://raw.githubusercontent.com/vllm-project/vllm/main/README.md. Once you have the content, summarize what vLLM is in 3 sentences.",
           "How many GPU-hours to fine-tune a 7B model at 40 TFLOPS on 10B tokens? Assume 6 FLOPs per token per parameter.",
-          "Fetch https://raw.githubusercontent.com/spiffe/spiffe/main/README.md. Once you have the content, explain in 2 sentences what problem SPIFFE solves based on whatever text you received, even if truncated.",
+          "Fetch https://raw.githubusercontent.com/spiffe/spiffe/main/README.md. Once you have the content, explain in 2 sentences what problem SPIFFE solves.",
           "What is 2 ** 32 and what would that be in gigabytes?",
+          "What is issue 1 in repo react-agent with author grace-redhat?",
+          "Create an issue in react-agent with author grace-redhat, title 'Issue created by agent' and Body 'This issue was created by an agent'",
       ];  
       
       function useSuggestion(i) {

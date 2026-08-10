@@ -9,13 +9,3 @@ auth:
   audience: "langgraph-react-agent"
   allowedServiceAccounts: []
   createAuthDelegatorBinding: true
-
-affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: NotIn
-                values:
-                  - ocp-j8fns-worker-cpu-3-94p9f
