@@ -27,7 +27,7 @@ This repo contains a LangGraph ReAct agent that evolves across the series&mdash;
 | 2 | [Run Local AI Agents for Free](#video-2--run-local-ai-agents-for-free-ollama--qwen--mcp) | Working local agent | Agent code, Ollama/OGX setup, MCP tools |
 | 3 | [Deploy AI Agents on Kubernetes](#video-3--deploying-ai-agents-on-kubernetes-ollama-to-vllm) | Containerized agent on OpenShift | Dockerfile, Helm chart, deploy targets |
 | 4 | [Sandbox Your AI Agent](#video-4--sandbox-your-ai-agent-openshell) | Sandboxed agent with OpenShell | _Coming soon_ |
-| 5 | [Zero-Trust Agent Identity](#video-5--zero-trust-agent-identity-with-spiffespire) | Identity-based tool authorization | MCP Gateway manifests |
+| 5 | [Zero-Trust Agent Identity](#video-5--zero-trust-agent-identity-with-spiffespire) | Identity-based tool authorization | MCP Gateway manifests, SPIFFE/SPIRE TBD |
 | 6 | [LLM Observability](#video-6--llm-observability-monitor-and-trace-ai-agents) | MLflow tracing | Tracing config |
 
 ---
