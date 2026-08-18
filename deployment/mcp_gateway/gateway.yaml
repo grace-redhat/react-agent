@@ -19,7 +19,7 @@ metadata:
   name: mcp-demo-gateway
   namespace: gateway-system
 spec:
-  gatewayClassName: istio
+  gatewayClassName: openshift-default
   listeners:
   - name: mcp
     port: 443

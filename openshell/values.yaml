@@ -1,0 +1,9 @@
+# OpenShell Helm chart overrides for Video 4
+# These values override defaults in the OpenShell Helm chart
+# See: https://github.com/NVIDIA/OpenShell
+
+# TODO: Add OpenShell deployment configuration
+# - Filesystem policy
+# - Network policy (per-binary, method-and-path egress)
+# - Process policy
+# - Inference router config
