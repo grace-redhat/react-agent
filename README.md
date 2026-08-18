@@ -2,20 +2,20 @@
 
 Companion repo for the **AgentOps Unlocked** video series.
 
-_"I built this on my laptop &rarr; I shipped it to production &rarr; I trust it in production."_
+_"I built this on my laptop, I shipped it to production, I trust it in production."_
 
-This repo contains a LangGraph ReAct agent that evolves across the series&mdash;from a local prototype running on Ollama to a production-grade deployment on Kubernetes with sandboxing, zero-trust identity, and observability.
+This repo contains a LangGraph ReAct agent that evolves across the series -- from a local prototype running on Ollama to a production-grade deployment on Kubernetes with sandboxing, identity, and observability.
 
 ---
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/) &mdash; Python package manager
+- [uv](https://docs.astral.sh/uv/) -- Python package manager
 - [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell (Windows: use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) or [Git Bash](https://git-scm.com/downloads))
-- [Ollama](https://ollama.com/) &mdash; local inference (Video 2)
-- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) &mdash; container builds (Video 3+)
-- [Helm](https://helm.sh/) &mdash; Kubernetes deployment (Video 3+)
-- [oc CLI](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) &mdash; OpenShift deployment (Video 3+)
+- [Ollama](https://ollama.com/) -- local inference (Video 2)
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) -- container builds (Video 3+)
+- [Helm](https://helm.sh/) -- Kubernetes deployment (Video 3+)
+- [oc CLI](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) -- OpenShift deployment (Video 3+)
 
 ---
 
@@ -23,22 +23,22 @@ This repo contains a LangGraph ReAct agent that evolves across the series&mdash;
 
 | # | Video | What You Build | Repo Content |
 |---|-------|---------------|--------------|
-| 1 | [Is Your AI Agent a Liability?](#video-1--is-your-ai-agent-a-liability) | &mdash; | No code (conceptual framing) |
-| 2 | [Run Local AI Agents for Free](#video-2--run-local-ai-agents-for-free-ollama--qwen--mcp) | Working local agent | Agent code, Ollama/OGX setup, MCP tools |
-| 3 | [Deploy AI Agents on Kubernetes](#video-3--deploying-ai-agents-on-kubernetes-ollama-to-vllm) | Containerized agent on OpenShift | Dockerfile, Helm chart, deploy targets |
-| 4 | [Sandbox Your AI Agent](#video-4--sandbox-your-ai-agent-openshell) | Sandboxed agent with OpenShell | _Coming soon_ |
-| 5 | [Zero-Trust Agent Identity](#video-5--zero-trust-agent-identity-with-spiffespire) | Identity-based tool authorization | MCP Gateway manifests, SPIFFE/SPIRE TBD |
-| 6 | [LLM Observability](#video-6--llm-observability-monitor-and-trace-ai-agents) | MLflow tracing | Tracing config |
+| 1 | [Is Your AI Agent a Liability?](#video-1----is-your-ai-agent-a-liability) | -- | No code (conceptual framing) |
+| 2 | [Run Local AI Agents for Free](#video-2----run-local-ai-agents-for-free-ollama--qwen--mcp) | Working local agent | Agent code, Ollama/OGX setup, MCP tools |
+| 3 | [Deploy AI Agents on Kubernetes](#video-3----deploying-ai-agents-on-kubernetes-ollama-to-vllm) | Containerized agent on OpenShift | Dockerfile, Helm chart, deploy targets |
+| 4 | [Sandbox Your AI Agent](#video-4----sandbox-your-ai-agent-openshell) | Sandboxed agent with OpenShell | OpenShell Helm values |
+| 5 | [MCP Gateway Tool Authorization](#video-5----mcp-gateway-tool-authorization) | Identity-based tool authorization | MCP Gateway manifests |
+| 6 | [LLM Observability](#video-6----llm-observability-monitor-and-trace-ai-agents) | MLflow tracing | Tracing config |
 
 ---
 
-## Video 1 &mdash; Is Your AI Agent a Liability?
+## Video 1 -- Is Your AI Agent a Liability?
 
-Series opener. Walks through the evolution of the AI stack&mdash;from chat completions to autonomous agents&mdash;and establishes the production gap. No code to run; every subsequent video references this framing.
+Series opener. Walks through the evolution of the AI stack -- from chat completions to autonomous agents -- and establishes the production gap. No code to run; every subsequent video references this framing.
 
 ---
 
-## Video 2 &mdash; Run Local AI Agents for Free (Ollama + Qwen + MCP)
+## Video 2 -- Run Local AI Agents for Free (Ollama + Qwen + MCP)
 
 Build a working AI agent on your laptop using Ollama for local inference and MCP for tool connectivity.
 
@@ -72,8 +72,8 @@ MODEL_ID=ollama/qwen3:1.7b
 ### Run
 
 ```bash
-make ogx-server   # terminal 1 — keep open
-make run-app      # terminal 2 — agent at http://localhost:8000
+make ogx-server   # terminal 1 -- keep open
+make run-app      # terminal 2 -- agent at http://localhost:8000
 ```
 
 ### Test
@@ -86,7 +86,7 @@ curl -X POST http://localhost:8000/chat/completions \
 
 ---
 
-## Video 3 &mdash; Deploying AI Agents on Kubernetes: Ollama to vLLM
+## Video 3 -- Deploying AI Agents on Kubernetes: Ollama to vLLM
 
 The same agent, containerized and deployed to OpenShift. Inference moves from Ollama to vLLM for multi-user throughput. **The agent code does not change.**
 
@@ -105,8 +105,8 @@ Edit `.env` for your cluster:
 
 ```ini
 API_KEY=your-api-key
-BASE_URL=https://your-vllm-endpoint.svc.cluster.local:8443/v1
-MODEL_ID=qwen3-17b
+BASE_URL=https://your-vllm-endpoint/v1
+MODEL_ID=Qwen3-8B-FP8-dynamic
 CONTAINER_IMAGE=quay.io/your-username/langgraph-react-agent:latest
 ```
 
@@ -133,17 +133,21 @@ curl -k https://<route>/health
 
 ---
 
-## Video 4 &mdash; Sandbox Your AI Agent: OpenShell
+## Video 4 -- Sandbox Your AI Agent: OpenShell
 
 Execution containment with [OpenShell](https://github.com/NVIDIA/OpenShell). Demonstrates why a default container is not a sandbox and how to enforce filesystem, network, and process policy around agent workloads.
 
-> Content for this video will be added to the repo. Check back for OpenShell policy files and walkthrough.
+### Files
+
+| Path | Purpose |
+|------|---------|
+| `openshell/values.yaml` | Helm overrides for deploying OpenShell |
 
 ---
 
-## Video 5 &mdash; Zero-Trust Agent Identity with SPIFFE/SPIRE
+## Video 5 -- MCP Gateway Tool Authorization
 
-SPIFFE/SPIRE issues workload identity to agents. An MCP Gateway (Kuadrant-based) sits in front of tool servers and authorizes each tool call against the caller's identity.
+An MCP Gateway (Kuadrant-based) sits in front of tool servers and authorizes each tool call against the caller's identity. A "readonly" key can call `github_issue_read` but is denied on `github_issue_write`; a "readwrite" key can call both.
 
 ### Files
 
@@ -151,8 +155,6 @@ SPIFFE/SPIRE issues workload identity to agents. An MCP Gateway (Kuadrant-based)
 |------|---------|
 | `deployment/mcp_gateway/kuadrant-operator.yaml` | Kuadrant operator + CatalogSource |
 | `deployment/mcp_gateway/kuadrant-cr.yaml` | Activate Kuadrant |
-| `deployment/mcp_gateway/istio-operator.yaml` | Istio Sail operator |
-| `deployment/mcp_gateway/istio-selfmanaged.yaml` | Istio control plane |
 | `deployment/mcp_gateway/gateway.yaml` | Gateway + ReferenceGrant |
 | `deployment/mcp_gateway/mcp-gateway-values.yaml` | MCP Gateway Helm values |
 | `deployment/mcp_gateway/reference-grant.yaml` | ReferenceGrant for MCPGatewayExtension |
@@ -169,12 +171,7 @@ oc apply -f deployment/mcp_gateway/kuadrant-operator.yaml
 # wait for Ready, then:
 oc apply -f deployment/mcp_gateway/kuadrant-cr.yaml
 
-# 2. Istio
-oc create namespace gateway-system
-oc apply -f deployment/mcp_gateway/istio-operator.yaml
-# wait for Ready, then:
-oc apply -f deployment/mcp_gateway/istio-selfmanaged.yaml
-# wait for Ready, then:
+# 2. Gateway
 oc apply -f deployment/mcp_gateway/gateway.yaml
 
 # 3. MCP Gateway
@@ -198,11 +195,9 @@ oc apply -f deployment/mcp_gateway/agent-authpolicy.yaml
 oc apply -f deployment/mcp_gateway/agent-identities.yaml
 ```
 
-> SPIFFE/SPIRE manifests will be added to the repo alongside the video release.
-
 ---
 
-## Video 6 &mdash; LLM Observability: Monitor and Trace AI Agents
+## Video 6 -- LLM Observability: Monitor and Trace AI Agents
 
 MLflow Tracing captures every prompt, reasoning step, tool invocation, and token cost. OpenTelemetry-compatible.
 
@@ -210,7 +205,7 @@ MLflow Tracing captures every prompt, reasoning step, tool invocation, and token
 
 | Path | Purpose |
 |------|---------|
-| `src/react_agent/tracing.py` | MLflow setup, health checks, K8s SA auth, TLS |
+| `src/react_agent/tracing.py` | MLflow tracing setup |
 | `.env.example` | MLflow config (local and OpenShift sections) |
 
 ### Enable Tracing
@@ -269,7 +264,6 @@ make test-auth-integration # auth integration tests
 - [Ollama](https://ollama.com/docs)
 - [MCP Gateway](https://github.com/Kuadrant/mcp-gateway)
 - [OpenShell](https://github.com/NVIDIA/OpenShell)
-- [SPIFFE/SPIRE](https://spiffe.io/)
 
 ## License
 

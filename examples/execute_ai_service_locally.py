@@ -1,12 +1,12 @@
 import asyncio
+import warnings
 from os import getenv
 
 from langchain_core.messages import HumanMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from react_agent.tools import MCP_SERVER_CONFIG
-from react_agent.agent import get_graph_closure
 
-import warnings
+from react_agent.agent import get_graph_closure
+from react_agent.tools import MCP_SERVER_CONFIG
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -19,38 +19,19 @@ QUESTIONS = (
 )
 DEBUG_MODE = False
 
-class SimpleContext:
-    """Simple context object for local execution that holds request payload and headers."""
-
-    
-    def __init__(self, payload=None):
-        """Store the initial request payload (or an empty dict)."""
-        self.request_payload_json = payload or {}
-
-    def get_json(self):
-        """Return the current request payload as a dict (e.g. messages for the agent)."""
-        return self.request_payload_json
-
-    def get_headers(self):
-        """Return request headers; empty dict for local execution."""
-        return {}
-
-
 
 async def main():
     global DEBUG_MODE
     base_url = getenv("BASE_URL")
     model_id = getenv("MODEL_ID")
 
-    # Ensure base_url ends with /v1 if provided
     if base_url and not base_url.endswith("/v1"):
         base_url = base_url.rstrip("/") + "/v1"
 
     mcp_client = MultiServerMCPClient(MCP_SERVER_CONFIG)
     mcp_tools = await mcp_client.get_tools()
 
-    agent = get_graph_closure(base_url=base_url, model_id=model_id,
-  mcp_tools=mcp_tools)
+    agent = get_graph_closure(base_url=base_url, model_id=model_id, mcp_tools=mcp_tools)
 
     loop = asyncio.get_running_loop()
 
@@ -85,7 +66,7 @@ async def main():
         ):
             kind = event["event"]
             if kind == "on_tool_start" and DEBUG_MODE:
-                print(f"[Tool: {event['name']} → {event['data'].get('input', '')}]")
+                print(f"[Tool: {event['name']} -> {event['data'].get('input', '')}]")
             elif kind == "on_tool_end" and DEBUG_MODE:
                 output = str(event["data"].get("output", ""))
                 print(f"[Result: {output[:300]}{'...' if len(output) > 300 else ''}]\n")
@@ -96,7 +77,7 @@ async def main():
             elif kind == "on_chat_model_end":
                 msg = event["data"].get("output")
                 if msg and hasattr(msg, "content"):
-                    print(msg.content, end="", flush= True)
+                    print(msg.content, end="", flush=True)
         print()
 
 
