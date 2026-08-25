@@ -4,18 +4,18 @@ Companion repo for the **AgentOps Unlocked** video series.
 
 _"I built this on my laptop, I shipped it to production, I trust it in production."_
 
-This repo contains a LangGraph ReAct agent that evolves across the series -- from a local prototype running on Ollama to a production-grade deployment on Kubernetes with sandboxing, identity, and observability.
+This repo contains a LangGraph ReAct agent that evolves across the series. We start with a local prototype running on Ollama and end with a production-grade deployment on Kubernetes with sandboxing, identity, and observability.
 
 ---
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/) -- Python package manager
+- [uv](https://docs.astral.sh/uv/) - Python package manager
 - [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell (Windows: use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) or [Git Bash](https://git-scm.com/downloads))
-- [Ollama](https://ollama.com/) -- local inference (Video 2)
-- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) -- container builds (Video 3+)
-- [Helm](https://helm.sh/) -- Kubernetes deployment (Video 3+)
-- [oc CLI](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) -- OpenShift deployment (Video 3+)
+- [Ollama](https://ollama.com/) - local inference (Video 2)
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) - container builds (Video 3+)
+- [Helm](https://helm.sh/) - Kubernetes deployment (Video 3+)
+- [oc CLI](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) - OpenShift deployment (Video 3+)
 
 ---
 
@@ -23,7 +23,7 @@ This repo contains a LangGraph ReAct agent that evolves across the series -- fro
 
 | # | Video | What You Build | Repo Content |
 |---|-------|---------------|--------------|
-| 1 | [Is Your AI Agent a Liability?](#video-1----is-your-ai-agent-a-liability) | -- | No code (conceptual framing) |
+| 1 | [Is Your AI Agent a Liability?](#video-1----is-your-ai-agent-a-liability) | - | No code (conceptual framing) |
 | 2 | [Run Local AI Agents for Free](#video-2----run-local-ai-agents-for-free-ollama--qwen--mcp) | Working local agent | Agent code, Ollama/OGX setup, MCP tools |
 | 3 | [Deploy AI Agents on Kubernetes](#video-3----deploying-ai-agents-on-kubernetes-ollama-to-vllm) | Containerized agent on OpenShift | Dockerfile, Helm chart, deploy targets |
 | 4 | [Sandbox Your AI Agent](#video-4----sandbox-your-ai-agent-openshell) | Sandboxed agent with OpenShell | OpenShell Helm values |
@@ -32,13 +32,13 @@ This repo contains a LangGraph ReAct agent that evolves across the series -- fro
 
 ---
 
-## Video 1 -- Is Your AI Agent a Liability?
+## Video 1 - Is Your AI Agent a Liability?
 
-Series opener. Walks through the evolution of the AI stack -- from chat completions to autonomous agents -- and establishes the production gap. No code to run; every subsequent video references this framing.
+This is the series opener. It walks through the evolution of the AI stack, from chat completions to autonomous agents, and establishes the production gap. Every subsequent video references this framing.
 
 ---
 
-## Video 2 -- Run Local AI Agents for Free (Ollama + Qwen + MCP)
+## Video 2 - Run Local AI Agents for Free (Ollama + Qwen + MCP)
 
 Build a working AI agent on your laptop using Ollama for local inference and MCP for tool connectivity.
 
@@ -72,8 +72,8 @@ MODEL_ID=ollama/qwen3:1.7b
 ### Run
 
 ```bash
-make ogx-server   # terminal 1 -- keep open
-make run-app      # terminal 2 -- agent at http://localhost:8000
+make ogx-server   # terminal 1 - keep open
+make run-app      # terminal 2 - agent at http://localhost:8000
 ```
 
 ### Test
@@ -86,9 +86,9 @@ curl -X POST http://localhost:8000/chat/completions \
 
 ---
 
-## Video 3 -- Deploying AI Agents on Kubernetes: Ollama to vLLM
+## Video 3 - Deploying AI Agents on Kubernetes: Ollama to vLLM
 
-The same agent, containerized and deployed to OpenShift. Inference moves from Ollama to vLLM for multi-user throughput. **The agent code does not change.**
+This video uses the same agent, containerized and deployed to OpenShift. Inference moves from Ollama to vLLM for multi-user throughput. **The agent code does not change.**
 
 ### Files
 
@@ -133,9 +133,9 @@ curl -k https://<route>/health
 
 ---
 
-## Video 4 -- Sandbox Your AI Agent: OpenShell
+## Video 4 - Sandbox Your AI Agent: OpenShell
 
-Execution containment with [OpenShell](https://github.com/NVIDIA/OpenShell). Demonstrates why a default container is not a sandbox and how to enforce filesystem, network, and process policy around agent workloads.
+This video explores execution containment with [OpenShell](https://github.com/NVIDIA/OpenShell). It demonstrates why a default container is not a sandbox and how to enforce filesystem, network, and process policy around agent workloads.
 
 ### Files
 
@@ -145,9 +145,9 @@ Execution containment with [OpenShell](https://github.com/NVIDIA/OpenShell). Dem
 
 ---
 
-## Video 5 -- MCP Gateway Tool Authorization
+## Video 5 - MCP Gateway Tool Authorization
 
-An MCP Gateway (Kuadrant-based) sits in front of tool servers and authorizes each tool call against the caller's identity. A "readonly" key can call `github_issue_read` but is denied on `github_issue_write`; a "readwrite" key can call both.
+In this video we deploy an MCP Gateway (Kuadrant-based) that sits in front of tool servers and authorizes each tool call against the caller's identity. A "readonly" key can call `github_issue_read` but is denied on `github_issue_write`; a "readwrite" key can call both.
 
 ### Files
 
@@ -168,28 +168,42 @@ An MCP Gateway (Kuadrant-based) sits in front of tool servers and authorizes eac
 ```bash
 # 1. Kuadrant
 oc apply -f deployment/mcp_gateway/kuadrant-operator.yaml
-# wait for Ready, then:
-oc apply -f deployment/mcp_gateway/kuadrant-cr.yaml
+# wait for all 4 CSVs to be Succeeded:
+oc get csv -n kuadrant-system -w
 
-# 2. Gateway
+# 2. Kuadrant CR
+oc apply -f deployment/mcp_gateway/kuadrant-cr.yaml
+oc wait kuadrant/kuadrant -n kuadrant-system --for=condition=Ready --timeout=300s
+
+# 4. GatewayClass — triggers auto-provisioning of Istio in openshift-ingress
+oc apply -f deployment/mcp_gateway/gatewayclass.yaml
+
+# wait for the auto-installed Istio to be ready:
+oc get istio -n openshift-ingress -w
+
+# 5. Gateway
 oc apply -f deployment/mcp_gateway/gateway.yaml
 
-# 3. MCP Gateway
+# wait for the auto-provisioned gateway deployment:
+oc get deployment -n openshift-ingress -w
+
+# 6. ReferenceGrant + MCP Gateway
+oc apply -f deployment/mcp_gateway/reference-grant.yaml
+
 export MCP_GATEWAY_VERSION=0.7.1
 kubectl apply -k "https://github.com/kuadrant/mcp-gateway/config/crd?ref=v${MCP_GATEWAY_VERSION}"
 helm upgrade -i mcp-gateway oci://ghcr.io/kuadrant/charts/mcp-gateway \
   --version ${MCP_GATEWAY_VERSION} \
   -f deployment/mcp_gateway/mcp-gateway-values.yaml \
   -n mcp-system --create-namespace
-oc apply -f deployment/mcp_gateway/reference-grant.yaml
 
-# 4. Register GitHub MCP server
+# 7. Register GitHub MCP server
 oc create secret generic github-mcp-token \
   --from-literal=GITHUB_TOKEN=<your-token> -n mcp-system
 oc apply -f deployment/github-mcp-server.yaml
 oc apply -f deployment/github-mcp-registration.yaml
 
-# 5. Authorization policy + demo identities
+# 8. Authorization policy + demo identities 
 oc apply -f deployment/mcp_gateway/agent-authpolicy.yaml
 # edit agent-identities.yaml with real API keys first
 oc apply -f deployment/mcp_gateway/agent-identities.yaml
@@ -197,9 +211,9 @@ oc apply -f deployment/mcp_gateway/agent-identities.yaml
 
 ---
 
-## Video 6 -- LLM Observability: Monitor and Trace AI Agents
+## Video 6 - LLM Observability: Monitor and Trace AI Agents
 
-MLflow Tracing captures every prompt, reasoning step, tool invocation, and token cost. OpenTelemetry-compatible.
+This video demos MLflow Tracing capturing every prompt, reasoning step, tool invocation, and token cost.
 
 ### Files
 

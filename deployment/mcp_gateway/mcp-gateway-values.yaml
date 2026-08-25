@@ -1,9 +1,9 @@
 controller:
   enabled: true
 gateway:
-  publicHost: <your-cluster-apps-domain>
+  publicHost: mcp-gateway.apps.cluster-lk2p7.lk2p7.sandbox155.opentlc.com
 mcpGatewayExtension:
   create: true
   gatewayRef:
     name: mcp-demo-gateway
-    namespace: gateway-system
+    namespace: openshift-ingress
