@@ -94,8 +94,25 @@ inference:
 # Log level for policy decisions (debug, info, warn, error)
 server:
   logLevel: info
+  # Runs gateway as plaintext HTTP (evaluation only). For production, use real TLS
+  # with cert-manager and OIDC (see https://docs.nvidia.com/openshell/latest/kubernetes/managing-certificates)
+  disableTls: true
 
 # Workload kind: StatefulSet (default, recommended) or Deployment
 # Use Deployment if you prefer rolling updates over stateful guarantees
 workload:
   kind: StatefulSet
+
+# ============================================================================
+# OpenShift-specific overrides
+# ============================================================================
+
+# Clears the chart's hardcoded fsGroup so OpenShift's admission controller
+# assigns it dynamically
+podSecurityContext:
+  fsGroup: null
+
+# Clears the chart's hardcoded UID so OpenShift's admission controller
+# assigns it dynamically
+securityContext:
+  runAsUser: null

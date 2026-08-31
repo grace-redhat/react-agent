@@ -139,13 +139,42 @@ Video 3 deployed the agent to OpenShift. Video 4 wraps it with sandbox policy—
 
 ### Prerequisites
 
-Install Agent Sandbox CRDs (cluster-wide, one-time):
+Install Red Hat Agent Sandbox Operator (cluster-wide, one-time):
 
 ```bash
-kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/latest/download/manifest.yaml
+# Create operator namespace and install via OLM
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-agent-sandbox-operator
+  labels:
+    openshift.io/cluster-monitoring: "true"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: agent-sandbox-operatorgroup
+  namespace: openshift-agent-sandbox-operator
+spec:
+  targetNamespaces:
+  - openshift-agent-sandbox-operator
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: agent-sandbox-operator
+  namespace: openshift-agent-sandbox-operator
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: agent-sandbox-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
 
-# Verify
-oc api-resources | grep agents.x-k8s.io
+# Verify operator is running
+oc -n openshift-agent-sandbox-operator get pods
 ```
 
 See [openshell/SETUP.md](openshell/SETUP.md) for OpenShift namespace and SCC setup.
@@ -156,10 +185,7 @@ See [openshell/SETUP.md](openshell/SETUP.md) for OpenShift namespace and SCC set
 helm install openshell oci://ghcr.io/nvidia/openshell/helm-chart \
   --version 0.1.0 \
   --namespace openshell \
-  -f openshell/values.yaml \
-  --set server.disableTls=true \
-  --set podSecurityContext.fsGroup=null \
-  --set securityContext.runAsUser=null
+  -f openshell/values.yaml
 ```
 
 ### Verify
