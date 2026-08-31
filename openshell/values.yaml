@@ -1,9 +1,101 @@
-# OpenShell Helm chart overrides for Video 4
-# These values override defaults in the OpenShell Helm chart
-# See: https://github.com/NVIDIA/OpenShell
+# OpenShell sandbox policy for the langgraph-react-agent
+# Enforces filesystem, network, process, and inference controls
+# Full schema: https://docs.nvidia.com/openshell/latest/reference/policy-schema
 
-# TODO: Add OpenShell deployment configuration
-# - Filesystem policy
-# - Network policy (per-binary, method-and-path egress)
-# - Process policy
-# - Inference router config
+# ============================================================================
+# FILESYSTEM POLICY: Landlock LSM restricts read/write access
+# ============================================================================
+# - read_only: agent can read but not modify (logs, configs)
+# - read_write: agent can read and write (workspace, cache, state)
+# - All other paths are inaccessible (deny-all default)
+
+filesystem:
+  # Paths agent needs to read-only
+  read_only:
+    - /etc                           # System config (required)
+    - /usr/share/zoneinfo            # Timezone data
+    - /usr/local/lib/python3.12/site-packages  # Python standard library
+
+  # Paths agent can read-write (logs, state, results)
+  read_write:
+    - /tmp                           # Temporary files, working directory
+    - /app/workspace                 # Agent working directory (mount this)
+    - /app/cache                     # Model cache, dependencies
+
+# ============================================================================
+# NETWORK POLICY: Default-deny. Only allow explicit destinations.
+# ============================================================================
+# Each rule evaluates against: destination hostname, port, binary, and
+# HTTP method (if applicable). Agent process cannot make any outbound
+# connection not listed here.
+
+network:
+  allow:
+    # Inference backend (Video 3 deploys vLLM to OpenShift)
+    # Replace with your actual vLLM endpoint
+    - destination: vllm.default.svc.cluster.local  # in-cluster service
+      port: 8000
+      binary: python3
+      method: POST
+
+    # Optional: allow agent to fetch web pages (if fetch_page tool is used)
+    - destination: "*.example.com"
+      port: 443
+      binary: python3
+      method: GET
+
+    # DNS lookups (required for any hostname-based rules)
+    - destination: "0.0.0.0"
+      port: 53
+      binary: python3
+      method: null
+
+    # Internal service discovery (Kubernetes DNS)
+    - destination: "10.0.0.0/8"
+      port: 53
+      binary: python3
+      method: null
+
+# ============================================================================
+# PROCESS POLICY: Restrict dangerous syscalls via seccomp
+# ============================================================================
+# OpenShell's default seccomp denylist blocks: ptrace, fork bomb syscalls,
+# setuid/setgid (privilege escalation), kernel module loading, etc.
+# Most agents don't need to override this.
+
+process:
+  seccomp: default
+
+# ============================================================================
+# INFERENCE ROUTING: Reroute LLM API calls through the control plane
+# ============================================================================
+# The proxy intercepts inference.local requests and:
+# 1. Strips the agent's credentials (prevents leakage)
+# 2. Injects the backend's credentials (controlled by gateway)
+# 3. Routes to the configured backend
+
+inference:
+  # Default backend for unrouted inference requests
+  # The agent calls inference.local; proxy routes to this backend
+  default_backend: vllm-internal
+
+  # Configured backends (add more as needed)
+  backends:
+    vllm-internal:
+      type: openai
+      # For in-cluster vLLM, use Kubernetes service DNS
+      # Ensure this matches your Video 3 deployment
+      base_url: http://vllm.default.svc.cluster.local:8000/v1
+
+# ============================================================================
+# Optional: Override gateway defaults (rarely needed)
+# ============================================================================
+
+# Log level for policy decisions (debug, info, warn, error)
+server:
+  logLevel: info
+
+# Workload kind: StatefulSet (default, recommended) or Deployment
+# Use Deployment if you prefer rolling updates over stateful guarantees
+workload:
+  kind: StatefulSet
