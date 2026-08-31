@@ -135,13 +135,47 @@ curl -k https://<route>/health
 
 ## Video 4 - Sandbox Your AI Agent: OpenShell
 
-This video explores execution containment with [OpenShell](https://github.com/NVIDIA/OpenShell). It demonstrates why a default container is not a sandbox and how to enforce filesystem, network, and process policy around agent workloads.
+Video 3 deployed the agent to OpenShift. Video 4 wraps it with sandbox policy—restricting file access, network egress, and system calls. Via [OpenShell](https://github.com/NVIDIA/OpenShell).
+
+### Prerequisites
+
+Install Agent Sandbox CRDs (cluster-wide, one-time):
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/latest/download/manifest.yaml
+
+# Verify
+oc api-resources | grep agents.x-k8s.io
+```
+
+See [openshell/SETUP.md](openshell/SETUP.md) for OpenShift namespace and SCC setup.
+
+### Deploy
+
+```bash
+helm install openshell oci://ghcr.io/nvidia/openshell/helm-chart \
+  --version 0.1.0 \
+  --namespace openshell \
+  -f openshell/values.yaml \
+  --set server.disableTls=true \
+  --set podSecurityContext.fsGroup=null \
+  --set securityContext.runAsUser=null
+```
+
+### Verify
+
+```bash
+oc rollout status statefulset/openshell -n openshell
+oc port-forward -n openshell svc/openshell 8080:8080 &
+openshell gateway add http://127.0.0.1:8080 --local --name openshift
+```
 
 ### Files
 
 | Path | Purpose |
 |------|---------|
-| `openshell/values.yaml` | Helm overrides for deploying OpenShell |
+| `openshell/SETUP.md` | Prerequisites, detailed walkthrough, troubleshooting |
+| `openshell/values.yaml` | Sandbox policy (filesystem, network, process, inference) |
 
 ---
 
