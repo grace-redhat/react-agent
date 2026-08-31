@@ -19,24 +19,58 @@ Verify you have completed Video 3 (agent deployed to OpenShift) and have:
 - Helm 3.x installed
 - Admin access to the cluster (needed for SCC and cluster-scoped CRDs)
 
-### 1. Install Agent Sandbox (cluster-wide, one-time)
+### 1. Install Red Hat Agent Sandbox Operator (cluster-wide, one-time)
 
-Agent Sandbox is a Kubernetes SIG project that provides the `Sandbox` API. OpenShell uses it to provision sandbox pods. Install it before the OpenShell chart:
+The Red Hat Agent Sandbox Operator provides the `Sandbox` API for OpenShift. Install it via OLM before deploying the OpenShell chart:
 
 ```bash
-# Install Agent Sandbox CRDs and controller
-kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/latest/download/manifest.yaml
+# Create the operator namespace
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-agent-sandbox-operator
+  labels:
+    openshift.io/cluster-monitoring: "true"
+EOF
 
-# Verify the controller is running (should be Running within seconds)
-kubectl -n agent-sandbox-system get pods
+# Create the operator group
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: agent-sandbox-operatorgroup
+  namespace: openshift-agent-sandbox-operator
+spec:
+  targetNamespaces:
+  - openshift-agent-sandbox-operator
+EOF
+
+# Subscribe to the operator
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: agent-sandbox-operator
+  namespace: openshift-agent-sandbox-operator
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: agent-sandbox-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Verify the operator is running (may take 1-2 minutes)
+oc -n openshift-agent-sandbox-operator get pods
 ```
 
 This creates:
-- `agent-sandbox-system` namespace (system-level)
-- `sandboxes.agents.x-k8s.io` CRD (cluster-scoped)
-- Controller pod (manages sandbox pod lifecycle)
+- `openshift-agent-sandbox-operator` namespace
+- `sandboxes.sandbox.openshift.io` CRD (cluster-scoped)
+- Operator pod (manages sandbox pod lifecycle)
 
-If your cluster is air-gapped, refer to [Agent Sandbox getting started](https://agent-sandbox.sigs.k8s.io/docs/getting_started/) for mirror instructions.
+For air-gapped clusters, refer to [Red Hat Agent Sandbox deployment docs](https://docs.redhat.com/en/documentation/openshift_sandboxed_containers/1.12/html/deploying_red_hat_build_of_agent_sandbox/index).
 
 ### 2. Create the OpenShell namespace
 
@@ -65,19 +99,8 @@ oc adm policy add-scc-to-user privileged -z openshell-sandbox -n openshell
 helm install openshell oci://ghcr.io/nvidia/openshell/helm-chart \
   --version 0.1.0 \
   --namespace openshell \
-  -f openshell/values.yaml \
-  --set server.disableTls=true \
-  --set podSecurityContext.fsGroup=null \
-  --set securityContext.runAsUser=null
+  -f openshell/values.yaml
 ```
-
-**Overrides explained:**
-
-| Override | Why |
-|----------|-----|
-| `server.disableTls=true` | Runs gateway as plaintext HTTP (evaluation only). For production, use real TLS with cert-manager and OIDC (see [Managing Certificates](https://docs.nvidia.com/openshell/latest/kubernetes/managing-certificates)). |
-| `podSecurityContext.fsGroup=null` | Clears the chart's hardcoded fsGroup so OpenShift's admission controller assigns it dynamically. |
-| `securityContext.runAsUser=null` | Clears the chart's hardcoded UID so OpenShift's admission controller assigns it dynamically. |
 
 ### 5. Verify the gateway is ready
 
@@ -142,8 +165,6 @@ helm install openshell oci://ghcr.io/nvidia/openshell/helm-chart \
   --namespace openshell \
   -f openshell/values.yaml \
   --set server.disableTls=false \
-  --set podSecurityContext.fsGroup=null \
-  --set securityContext.runAsUser=null \
   --set certManager.enabled=true \
   --set certManager.serverIssuerRef.name=letsencrypt-prod \
   --set certManager.serverIssuerRef.kind=ClusterIssuer \
